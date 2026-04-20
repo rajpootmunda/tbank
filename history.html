@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TBank — Transaction History</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2300C896'/><text y='.9em' font-size='70' x='15'>🏦</text></svg>" />
+</head>
+<body>
+<div class="page-wrapper">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <a class="back-btn" href="dashboard.html">←</a>
+    <div class="page-header-info">
+      <h2>Transaction History</h2>
+      <p id="txnSummaryLabel">All transactions</p>
+    </div>
+    <button class="icon-btn" onclick="exportCSV()" title="Export CSV" style="margin-left:auto;">📥</button>
+  </div>
+
+  <!-- Summary Stats Bar -->
+  <div style="background:var(--navy);padding:0 24px 24px;">
+    <div style="display:flex;gap:12px;">
+      <div style="flex:1;background:rgba(255,255,255,0.07);border-radius:14px;padding:14px;text-align:center;">
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px;">DEPOSITED</div>
+        <div style="font-family:var(--font-alt);font-size:16px;font-weight:700;color:var(--primary);" id="sumDeposit">Rs 0</div>
+      </div>
+      <div style="flex:1;background:rgba(255,255,255,0.07);border-radius:14px;padding:14px;text-align:center;">
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px;">WITHDRAWN</div>
+        <div style="font-family:var(--font-alt);font-size:16px;font-weight:700;color:var(--danger);" id="sumWithdraw">Rs 0</div>
+      </div>
+      <div style="flex:1;background:rgba(255,255,255,0.07);border-radius:14px;padding:14px;text-align:center;">
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px;">NET</div>
+        <div style="font-family:var(--font-alt);font-size:16px;font-weight:700;color:#fff;" id="sumNet">Rs 0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Bar -->
+  <div style="padding:16px 24px 0;">
+    <div class="input-wrap">
+      <span class="input-icon">🔍</span>
+      <input type="text" id="searchInput" class="form-input"
+             placeholder="Search transactions…" oninput="filterTxns()" />
+    </div>
+  </div>
+
+  <!-- Filter Pills -->
+  <div class="history-filters">
+    <button class="filter-pill active" onclick="setFilter('all', this)">All</button>
+    <button class="filter-pill" onclick="setFilter('deposit', this)">Deposits</button>
+    <button class="filter-pill" onclick="setFilter('withdraw', this)">Withdrawals</button>
+    <button class="filter-pill" onclick="setFilter('today', this)">Today</button>
+    <button class="filter-pill" onclick="setFilter('week', this)">This Week</button>
+    <button class="filter-pill" onclick="setFilter('month', this)">This Month</button>
+  </div>
+
+  <!-- Transaction List -->
+  <div class="txn-list" id="txnList" style="padding-bottom:120px;">
+    <!-- Injected by JS -->
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a class="nav-item" href="dashboard.html"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></a>
+    <a class="nav-item" href="deposit.html"><span class="nav-icon">⬇️</span><span class="nav-label">Deposit</span></a>
+    <a class="nav-item" href="withdraw.html"><span class="nav-icon">⬆️</span><span class="nav-label">Withdraw</span></a>
+    <a class="nav-item active" href="history.html"><span class="nav-icon">📋</span><span class="nav-label">History</span></a>
+    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></a>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="db.js"></script>
+<script>
+  DB.requireLogin();
+  const user = DB.currentUser();
+  let allTxns = DB.getTransactions(user.id);
+  let currentFilter = 'all';
+
+  // Compute & show summary stats
+  function updateStats(txns) {
+    const deps  = txns.filter(t => t.type === 'deposit');
+    const wds   = txns.filter(t => t.type === 'withdraw');
+    const sumD  = deps.reduce((s, t) => s + t.amount, 0);
+    const sumW  = wds.reduce((s,  t) => s + t.amount, 0);
+    const net   = sumD - sumW;
+
+    document.getElementById('sumDeposit').textContent  = 'Rs ' + sumD.toLocaleString('en-PK', {maximumFractionDigits:0});
+    document.getElementById('sumWithdraw').textContent = 'Rs ' + sumW.toLocaleString('en-PK', {maximumFractionDigits:0});
+    const netEl = document.getElementById('sumNet');
+    netEl.textContent = (net >= 0 ? '+' : '') + 'Rs ' + Math.abs(net).toLocaleString('en-PK', {maximumFractionDigits:0});
+    netEl.style.color = net >= 0 ? 'var(--primary)' : 'var(--danger)';
+
+    document.getElementById('txnSummaryLabel').textContent = txns.length + ' transaction' + (txns.length !== 1 ? 's' : '');
+  }
+
+  function renderTxns(txns) {
+    updateStats(txns);
+    const container = document.getElementById('txnList');
+    container.innerHTML = '';
+
+    if (txns.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <span class="empty-icon">📭</span>
+          <p>No transactions found.<br>Try a different filter or search.</p>
+        </div>`;
+      return;
+    }
+
+    // Group by date
+    const groups = {};
+    txns.forEach(t => {
+      const key = new Date(t.date).toLocaleDateString('en-PK', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(t);
+    });
+
+    Object.entries(groups).forEach(([date, items]) => {
+      const header = document.createElement('div');
+      header.style.cssText = 'font-size:12px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:0.5px;padding:16px 0 8px;';
+      header.textContent = date;
+      container.appendChild(header);
+
+      items.forEach(t => {
+        const isDeposit = t.type === 'deposit';
+        const div = document.createElement('div');
+        div.className = 'txn-item';
+        div.innerHTML = `
+          <div class="txn-icon ${t.type}">${isDeposit ? '⬇️' : '⬆️'}</div>
+          <div class="txn-info">
+            <div class="txn-desc">${escHtml(t.description)}</div>
+            <div class="txn-date">${new Date(t.date).toLocaleTimeString('en-PK', {hour:'2-digit',minute:'2-digit'})}</div>
+            <div class="txn-date" style="font-size:11px;color:var(--text-light);">After: ${DB.formatPKR(t.balanceAfter)}</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="txn-amount ${t.type}">
+              ${isDeposit ? '+' : '-'} ${DB.formatPKR(t.amount)}
+            </div>
+            <div style="font-size:11px;color:var(--text-light);margin-top:2px;">${t.id}</div>
+          </div>`;
+        container.appendChild(div);
+      });
+    });
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function getFilteredTxns() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const now = new Date();
+
+    return allTxns.filter(t => {
+      // Type filter
+      if (currentFilter === 'deposit'  && t.type !== 'deposit')  return false;
+      if (currentFilter === 'withdraw' && t.type !== 'withdraw') return false;
+      if (currentFilter === 'today') {
+        const d = new Date(t.date);
+        if (d.toDateString() !== now.toDateString()) return false;
+      }
+      if (currentFilter === 'week') {
+        const d = new Date(t.date);
+        const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7);
+        if (d < weekAgo) return false;
+      }
+      if (currentFilter === 'month') {
+        const d = new Date(t.date);
+        if (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) return false;
+      }
+      // Search filter
+      if (search && !t.description.toLowerCase().includes(search) && !t.id.toLowerCase().includes(search)) return false;
+      return true;
+    });
+  }
+
+  function setFilter(filter, btn) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTxns(getFilteredTxns());
+  }
+
+  function filterTxns() {
+    renderTxns(getFilteredTxns());
+  }
+
+  function exportCSV() {
+    const txns = getFilteredTxns();
+    if (txns.length === 0) {
+      const t = document.getElementById('toast');
+      t.innerHTML = 'ℹ️ No transactions to export.';
+      t.className = 'toast info show';
+      setTimeout(() => t.classList.remove('show'), 2500);
+      return;
+    }
+    let csv = 'Transaction ID,Type,Amount (PKR),Description,Balance After,Date\n';
+    txns.forEach(t => {
+      csv += `"${t.id}","${t.type}","${t.amount}","${t.description}","${t.balanceAfter}","${new Date(t.date).toLocaleString()}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'TBank_History_' + Date.now() + '.csv';
+    a.click(); URL.revokeObjectURL(url);
+
+    const t = document.getElementById('toast');
+    t.innerHTML = '✅ History exported as CSV!';
+    t.className = 'toast success show';
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // Initial render
+  renderTxns(allTxns);
+</script>
+</body>
+</html>

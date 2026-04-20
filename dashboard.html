@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TBank — Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2300C896'/><text y='.9em' font-size='70' x='15'>🏦</text></svg>" />
+</head>
+<body>
+<div class="page-wrapper">
+
+  <!-- Top App Bar -->
+  <div class="app-bar">
+    <div class="app-bar-logo">T<span>Bank</span></div>
+    <div style="display:flex;gap:10px;">
+      <button class="icon-btn" title="Notifications">🔔</button>
+      <button class="icon-btn" onclick="window.location.href='profile.html'" title="Profile">👤</button>
+    </div>
+  </div>
+
+  <!-- Balance Section -->
+  <div class="balance-section">
+    <div class="balance-card anim-fade-up">
+
+      <div class="balance-label">Total Balance</div>
+      <div class="balance-amount">
+        <span class="currency">Rs </span><span id="balanceAmt">0.00</span>
+      </div>
+      <div class="balance-user" id="balanceUser">Loading…</div>
+
+      <div class="balance-actions">
+        <a class="action-pill" href="deposit.html">
+          <span class="pill-icon">⬇️</span> Deposit
+        </a>
+        <a class="action-pill" href="withdraw.html">
+          <span class="pill-icon">⬆️</span> Withdraw
+        </a>
+        <a class="action-pill" href="history.html">
+          <span class="pill-icon">📋</span> History
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="section-header">
+    <span class="section-title">Overview</span>
+  </div>
+  <div class="stats-row anim-fade-up delay-1">
+    <div class="stat-card">
+      <div class="stat-icon green">💰</div>
+      <div class="stat-value" id="totalDeposit">Rs 0</div>
+      <div class="stat-label">Total Deposited</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon red">💸</div>
+      <div class="stat-value" id="totalWithdraw">Rs 0</div>
+      <div class="stat-label">Total Withdrawn</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon blue">🔄</div>
+      <div class="stat-value" id="txnCount">0</div>
+      <div class="stat-label">Transactions</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon orange">📅</div>
+      <div class="stat-value" id="memberSince">—</div>
+      <div class="stat-label">Member Since</div>
+    </div>
+  </div>
+
+  <!-- Recent Transactions -->
+  <div class="section-header anim-fade-up delay-2">
+    <span class="section-title">Recent Activity</span>
+    <a class="section-link" href="history.html">See All</a>
+  </div>
+
+  <div class="txn-list anim-fade-up delay-3" id="recentTxns">
+    <!-- Injected by JS -->
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a class="nav-item active" href="dashboard.html">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Home</span>
+    </a>
+    <a class="nav-item" href="deposit.html">
+      <span class="nav-icon">⬇️</span>
+      <span class="nav-label">Deposit</span>
+    </a>
+    <a class="nav-item" href="withdraw.html">
+      <span class="nav-icon">⬆️</span>
+      <span class="nav-label">Withdraw</span>
+    </a>
+    <a class="nav-item" href="history.html">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">History</span>
+    </a>
+    <a class="nav-item" href="profile.html">
+      <span class="nav-icon">👤</span>
+      <span class="nav-label">Profile</span>
+    </a>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="db.js"></script>
+<script>
+  DB.requireLogin();
+  const user = DB.currentUser();
+  const txns = DB.getTransactions(user.id);
+
+  // Balance
+  document.getElementById('balanceAmt').textContent =
+    Number(user.balance).toLocaleString('en-PK', { minimumFractionDigits: 2 });
+  document.getElementById('balanceUser').textContent =
+    'Welcome, ' + user.name + ' 👋';
+
+  // Stats
+  const deposits  = txns.filter(t => t.type === 'deposit');
+  const withdraws = txns.filter(t => t.type === 'withdraw');
+  const sumD = deposits.reduce((s, t) => s + t.amount, 0);
+  const sumW = withdraws.reduce((s, t) => s + t.amount, 0);
+
+  document.getElementById('totalDeposit').textContent  = 'Rs ' + sumD.toLocaleString('en-PK', { minimumFractionDigits: 0 });
+  document.getElementById('totalWithdraw').textContent = 'Rs ' + sumW.toLocaleString('en-PK', { minimumFractionDigits: 0 });
+  document.getElementById('txnCount').textContent      = txns.length;
+
+  const d = new Date(user.createdAt);
+  document.getElementById('memberSince').textContent =
+    d.toLocaleDateString('en-PK', { day: '2-digit', month: 'short' });
+
+  // Recent transactions (last 5)
+  const container = document.getElementById('recentTxns');
+  const recent = txns.slice(0, 5);
+
+  if (recent.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">🏦</span>
+        <p>No transactions yet.<br>Make your first deposit to get started!</p>
+      </div>`;
+  } else {
+    recent.forEach(t => {
+      const isDeposit = t.type === 'deposit';
+      container.innerHTML += `
+        <div class="txn-item">
+          <div class="txn-icon ${t.type}">${isDeposit ? '⬇️' : '⬆️'}</div>
+          <div class="txn-info">
+            <div class="txn-desc">${t.description}</div>
+            <div class="txn-date">${DB.formatDate(t.date)}</div>
+          </div>
+          <div>
+            <div class="txn-amount ${t.type}">
+              ${isDeposit ? '+' : '-'} ${DB.formatPKR(t.amount)}
+            </div>
+            <div class="txn-sub">Bal: ${DB.formatPKR(t.balanceAfter)}</div>
+          </div>
+        </div>`;
+    });
+  }
+
+  // Check for success message from deposit/withdraw pages
+  const msg = sessionStorage.getItem('tbank_msg');
+  if (msg) {
+    const t = document.getElementById('toast');
+    t.innerHTML = '✅ ' + msg;
+    t.className = 'toast success show';
+    setTimeout(() => t.classList.remove('show'), 3500);
+    sessionStorage.removeItem('tbank_msg');
+  }
+</script>
+</body>
+</html>

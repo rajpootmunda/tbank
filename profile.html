@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TBank — Profile</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2300C896'/><text y='.9em' font-size='70' x='15'>🏦</text></svg>" />
+</head>
+<body>
+<div class="page-wrapper">
+
+  <!-- Profile Hero -->
+  <div class="profile-hero">
+    <!-- Back button -->
+    <a href="dashboard.html" class="back-btn" style="position:absolute;top:20px;left:24px;">←</a>
+
+    <div style="position:relative;z-index:1;padding-top:20px;">
+      <div class="avatar" id="avatarInitial">?</div>
+      <div class="profile-name" id="profileName">Loading…</div>
+      <div class="profile-phone" id="profilePhone">+92 XXX XXXXXXX</div>
+
+      <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,200,150,0.15);border:1px solid rgba(0,200,150,0.3);border-radius:50px;padding:6px 14px;margin-top:12px;">
+        <span style="font-size:10px;color:var(--primary);">●</span>
+        <span style="font-size:12px;font-weight:600;color:var(--primary);">Active Account</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Card -->
+  <div class="profile-card">
+
+    <!-- Balance snapshot -->
+    <div class="info-card" style="margin-bottom:20px;">
+      <div class="info-row">
+        <span class="info-key">Current Balance</span>
+        <span class="info-val text-primary" id="profileBal">Rs 0.00</span>
+      </div>
+      <div class="info-row">
+        <span class="info-key">Account Number</span>
+        <span class="info-val" id="profileAccNum">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-key">Member Since</span>
+        <span class="info-val" id="profileMemberSince">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-key">Total Transactions</span>
+        <span class="info-val" id="profileTxnCount">0</span>
+      </div>
+    </div>
+
+    <!-- Menu Items -->
+    <div style="font-size:13px;font-weight:700;color:var(--text-light);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:12px;">
+      Quick Actions
+    </div>
+
+    <div class="profile-menu-item" onclick="window.location.href='deposit.html'">
+      <div class="menu-icon-wrap"><span class="menu-icon">⬇️</span></div>
+      <span class="menu-label">Deposit Money</span>
+      <span class="menu-arrow">›</span>
+    </div>
+
+    <div class="profile-menu-item" onclick="window.location.href='withdraw.html'">
+      <div class="menu-icon-wrap"><span class="menu-icon">⬆️</span></div>
+      <span class="menu-label">Withdraw Money</span>
+      <span class="menu-arrow">›</span>
+    </div>
+
+    <div class="profile-menu-item" onclick="window.location.href='history.html'">
+      <div class="menu-icon-wrap"><span class="menu-icon">📋</span></div>
+      <span class="menu-label">Transaction History</span>
+      <span class="menu-arrow">›</span>
+    </div>
+
+    <div class="profile-menu-item" onclick="showChangePinModal()">
+      <div class="menu-icon-wrap"><span class="menu-icon">🔒</span></div>
+      <span class="menu-label">Change PIN</span>
+      <span class="menu-arrow">›</span>
+    </div>
+
+    <div style="font-size:13px;font-weight:700;color:var(--text-light);letter-spacing:0.5px;text-transform:uppercase;margin:20px 0 12px;">
+      Account
+    </div>
+
+    <div class="profile-menu-item" onclick="showAbout()">
+      <div class="menu-icon-wrap"><span class="menu-icon">ℹ️</span></div>
+      <span class="menu-label">About TBank</span>
+      <span class="menu-arrow">›</span>
+    </div>
+
+    <div class="profile-menu-item" onclick="confirmLogout()" style="margin-top:8px;">
+      <div class="menu-icon-wrap" style="background:rgba(239,68,68,0.1);">
+        <span class="menu-icon">🚪</span>
+      </div>
+      <span class="menu-label" style="color:var(--danger);">Sign Out</span>
+      <span class="menu-arrow" style="color:var(--danger);">›</span>
+    </div>
+
+  </div><!-- /profile-card -->
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a class="nav-item" href="dashboard.html"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></a>
+    <a class="nav-item" href="deposit.html"><span class="nav-icon">⬇️</span><span class="nav-label">Deposit</span></a>
+    <a class="nav-item" href="withdraw.html"><span class="nav-icon">⬆️</span><span class="nav-label">Withdraw</span></a>
+    <a class="nav-item" href="history.html"><span class="nav-icon">📋</span><span class="nav-label">History</span></a>
+    <a class="nav-item active" href="profile.html"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></a>
+  </nav>
+
+  <!-- ─── Change PIN Modal ─── -->
+  <div id="pinModal" class="hidden" style="
+    position:fixed;inset:0;background:rgba(0,0,0,0.55);
+    display:flex;align-items:flex-end;justify-content:center;
+    z-index:9000;backdrop-filter:blur(4px);">
+    <div style="
+      background:var(--card-bg);border-radius:28px 28px 0 0;
+      width:100%;max-width:430px;padding:28px;">
+      <div style="font-size:18px;font-weight:700;margin-bottom:20px;">🔒 Change PIN</div>
+
+      <div class="form-group">
+        <label class="form-label">Current PIN</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="curPin" class="form-input" placeholder="Current PIN" maxlength="6" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">New PIN</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔑</span>
+          <input type="password" id="newPin" class="form-input" placeholder="New PIN (4-6 digits)" maxlength="6" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm New PIN</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔑</span>
+          <input type="password" id="newPin2" class="form-input" placeholder="Repeat new PIN" maxlength="6" />
+        </div>
+        <div class="error-text" id="pinError" style="display:none;"></div>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-top:8px;">
+        <button class="btn btn-outline" onclick="hidePinModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="changePin()">Update PIN</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── About Modal ─── -->
+  <div id="aboutModal" class="hidden" style="
+    position:fixed;inset:0;background:rgba(0,0,0,0.55);
+    display:flex;align-items:center;justify-content:center;
+    z-index:9000;backdrop-filter:blur(4px);padding:24px;">
+    <div style="
+      background:var(--card-bg);border-radius:24px;
+      width:100%;max-width:380px;padding:32px;text-align:center;">
+      <div style="font-size:48px;margin-bottom:16px;">🏦</div>
+      <div style="font-family:var(--font-alt);font-size:26px;font-weight:700;margin-bottom:6px;">
+        T<span style="color:var(--primary);">Bank</span>
+      </div>
+      <div style="font-size:13px;color:var(--text-light);margin-bottom:20px;">Version 1.0.0</div>
+      <p style="font-size:14px;color:var(--text-mid);line-height:1.7;margin-bottom:24px;">
+        TBank is a modern digital banking app built for Pakistan. Deposit, withdraw, and track your finances with ease and security.
+      </p>
+      <div class="info-card" style="text-align:left;margin-bottom:20px;">
+        <div class="info-row"><span class="info-key">Currency</span><span class="info-val">Pakistani Rupee (PKR)</span></div>
+        <div class="info-row"><span class="info-key">Storage</span><span class="info-val">Local (Your Device)</span></div>
+        <div class="info-row"><span class="info-key">Min Deposit</span><span class="info-val">Rs 100</span></div>
+        <div class="info-row"><span class="info-key">Min Withdraw</span><span class="info-val">Rs 100</span></div>
+      </div>
+      <button class="btn btn-primary" onclick="hideAbout()">Close</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="db.js"></script>
+<script>
+  DB.requireLogin();
+  const user = DB.currentUser();
+  const txns = DB.getTransactions(user.id);
+
+  // Populate profile
+  const initials = user.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('avatarInitial').textContent = initials;
+  document.getElementById('profileName').textContent   = user.name;
+  document.getElementById('profilePhone').textContent  = user.phone;
+  document.getElementById('profileBal').textContent    = DB.formatPKR(user.balance);
+  document.getElementById('profileAccNum').textContent = 'TB-' + user.id.slice(-8).toUpperCase();
+  document.getElementById('profileTxnCount').textContent = txns.length + ' transactions';
+  document.getElementById('profileMemberSince').textContent =
+    new Date(user.createdAt).toLocaleDateString('en-PK', { day:'2-digit', month:'long', year:'numeric' });
+
+  function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    const icons = { success:'✅', error:'❌', info:'ℹ️' };
+    t.innerHTML = icons[type] + ' ' + msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function confirmLogout() {
+    if (confirm('Are you sure you want to sign out?')) {
+      DB.logout();
+      window.location.href = 'index.html';
+    }
+  }
+
+  // Change PIN modal
+  function showChangePinModal() {
+    document.getElementById('pinModal').classList.remove('hidden');
+    document.getElementById('pinModal').style.display = 'flex';
+  }
+
+  function hidePinModal() {
+    document.getElementById('pinModal').classList.add('hidden');
+    document.getElementById('pinModal').style.display = 'none';
+    ['curPin','newPin','newPin2'].forEach(id => document.getElementById(id).value = '');
+    const e = document.getElementById('pinError');
+    e.style.display = 'none'; e.textContent = '';
+  }
+
+  function changePin() {
+    const cur  = document.getElementById('curPin').value.trim();
+    const nw   = document.getElementById('newPin').value.trim();
+    const nw2  = document.getElementById('newPin2').value.trim();
+    const err  = document.getElementById('pinError');
+
+    err.style.display = 'none';
+
+    if (!cur || !nw || !nw2) { err.textContent = 'All fields required.'; err.style.display='block'; return; }
+    if (cur !== user.pin)     { err.textContent = 'Current PIN is incorrect.'; err.style.display='block'; return; }
+    if (nw.length < 4)        { err.textContent = 'New PIN must be at least 4 digits.'; err.style.display='block'; return; }
+    if (nw !== nw2)           { err.textContent = 'New PINs do not match.'; err.style.display='block'; return; }
+
+    // Update PIN in localStorage
+    const users = DB.getUsers();
+    const idx   = users.findIndex(u => u.id === user.id);
+    users[idx].pin = nw;
+    DB.saveUsers(users);
+
+    hidePinModal();
+    showToast('PIN updated successfully!', 'success');
+  }
+
+  // About modal
+  function showAbout()  { document.getElementById('aboutModal').classList.remove('hidden'); document.getElementById('aboutModal').style.display='flex'; }
+  function hideAbout()  { document.getElementById('aboutModal').classList.add('hidden');    document.getElementById('aboutModal').style.display='none'; }
+</script>
+</body>
+</html>

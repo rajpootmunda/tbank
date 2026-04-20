@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TBank — Deposit</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2300C896'/><text y='.9em' font-size='70' x='15'>🏦</text></svg>" />
+</head>
+<body>
+<div class="page-wrapper">
+
+  <!-- Main Screen -->
+  <div id="mainScreen">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <a class="back-btn" href="dashboard.html">←</a>
+      <div class="page-header-info">
+        <h2>Deposit Money</h2>
+        <p>Add funds to your TBank account</p>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="page-body">
+
+      <!-- Current Balance Info -->
+      <div class="info-card anim-fade-up">
+        <div class="info-row">
+          <span class="info-key">Current Balance</span>
+          <span class="info-val text-primary" id="currentBal">Rs 0.00</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Account Holder</span>
+          <span class="info-val" id="holderName">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Account Number</span>
+          <span class="info-val" id="accNum">—</span>
+        </div>
+      </div>
+
+      <!-- Amount Card -->
+      <div class="amount-card anim-fade-up delay-1">
+        <div class="amount-label">Enter Deposit Amount</div>
+        <div class="amount-input-wrap">
+          <span class="amount-currency">Rs</span>
+          <input type="number" id="amountInput" class="amount-input"
+                 placeholder="0" min="1" max="10000000" />
+        </div>
+        <div class="quick-amounts">
+          <button class="quick-amt" onclick="setAmount(500)">500</button>
+          <button class="quick-amt" onclick="setAmount(1000)">1,000</button>
+          <button class="quick-amt" onclick="setAmount(5000)">5,000</button>
+          <button class="quick-amt" onclick="setAmount(10000)">10,000</button>
+          <button class="quick-amt" onclick="setAmount(25000)">25,000</button>
+          <button class="quick-amt" onclick="setAmount(50000)">50,000</button>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="info-card anim-fade-up delay-2" style="padding:20px;">
+        <label class="form-label">Description (optional)</label>
+        <div class="input-wrap">
+          <span class="input-icon">📝</span>
+          <input type="text" id="descInput" class="form-input"
+                 placeholder="e.g. Salary, Freelance payment…" maxlength="60" />
+        </div>
+      </div>
+
+      <!-- Fee / Summary -->
+      <div class="info-card anim-fade-up delay-3">
+        <div class="info-row">
+          <span class="info-key">Deposit Amount</span>
+          <span class="info-val" id="summaryAmt">Rs 0.00</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Processing Fee</span>
+          <span class="info-val text-success">Free</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Balance After</span>
+          <span class="info-val text-primary" id="balAfter">Rs 0.00</span>
+        </div>
+      </div>
+
+      <div class="error-text" id="depError" style="display:none;margin-bottom:12px;font-size:14px;"></div>
+
+      <button class="btn btn-primary anim-fade-up delay-4" onclick="handleDeposit()">
+        <span id="depBtnText">⬇️ &nbsp; Deposit Now</span>
+        <div class="spinner" id="depSpinner"></div>
+      </button>
+
+    </div><!-- /page-body -->
+
+  </div><!-- /mainScreen -->
+
+  <!-- ─── Success Screen ─── -->
+  <div id="successScreen" class="hidden">
+    <div class="success-screen">
+      <div class="success-circle">✅</div>
+      <div class="success-amount" id="successAmt"></div>
+      <p class="success-msg">Deposit Successful!</p>
+      <p class="success-sub" id="successSub"></p>
+
+      <div class="info-card" style="margin:0 0 20px;text-align:left;">
+        <div class="info-row">
+          <span class="info-key">Transaction ID</span>
+          <span class="info-val" id="successTxnId" style="font-size:12px;"></span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Date &amp; Time</span>
+          <span class="info-val" id="successDate"></span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">New Balance</span>
+          <span class="info-val text-primary" id="successBal"></span>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="goHome()">Back to Home</button>
+      <button class="btn btn-outline mt-8" onclick="anotherDeposit()">Make Another Deposit</button>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a class="nav-item" href="dashboard.html"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></a>
+    <a class="nav-item active" href="deposit.html"><span class="nav-icon">⬇️</span><span class="nav-label">Deposit</span></a>
+    <a class="nav-item" href="withdraw.html"><span class="nav-icon">⬆️</span><span class="nav-label">Withdraw</span></a>
+    <a class="nav-item" href="history.html"><span class="nav-icon">📋</span><span class="nav-label">History</span></a>
+    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></a>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="db.js"></script>
+<script>
+  DB.requireLogin();
+  const user = DB.currentUser();
+
+  // Populate user info
+  document.getElementById('currentBal').textContent = DB.formatPKR(user.balance);
+  document.getElementById('holderName').textContent  = user.name;
+  document.getElementById('accNum').textContent      = 'TB-' + user.id.slice(-8).toUpperCase();
+
+  // Live summary update
+  const amtInput = document.getElementById('amountInput');
+  amtInput.addEventListener('input', updateSummary);
+
+  function updateSummary() {
+    const amt = parseFloat(amtInput.value) || 0;
+    const fresh = DB.currentUser();
+    document.getElementById('summaryAmt').textContent = DB.formatPKR(amt);
+    document.getElementById('balAfter').textContent   = DB.formatPKR(fresh.balance + amt);
+  }
+
+  function setAmount(val) {
+    amtInput.value = val;
+    document.querySelectorAll('.quick-amt').forEach(b => b.classList.remove('selected'));
+    event.target.classList.add('selected');
+    updateSummary();
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('depError');
+    el.textContent = '⚠️ ' + msg; el.style.display = 'block';
+  }
+
+  function clearError() {
+    const el = document.getElementById('depError');
+    el.textContent = ''; el.style.display = 'none';
+  }
+
+  function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+    t.innerHTML = icons[type] + ' ' + msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function setLoading(loading) {
+    document.getElementById('depBtnText').style.display  = loading ? 'none' : 'inline';
+    document.getElementById('depSpinner').style.display  = loading ? 'block' : 'none';
+  }
+
+  let lastTxn = null;
+
+  function handleDeposit() {
+    clearError();
+    const amount = parseFloat(amtInput.value);
+    const desc   = document.getElementById('descInput').value.trim() || 'Cash Deposit';
+
+    if (!amount || amount <= 0) { showError('Please enter a valid amount.'); return; }
+    if (amount < 100)           { showError('Minimum deposit is Rs 100.'); return; }
+    if (amount > 10000000)      { showError('Maximum single deposit is Rs 10,000,000.'); return; }
+
+    setLoading(true);
+
+    setTimeout(() => {
+      const res = DB.deposit(amount, desc);
+      setLoading(false);
+
+      if (!res.ok) { showError(res.msg); return; }
+
+      // Record txn detail for success screen
+      const txns = DB.getTransactions(user.id);
+      lastTxn = txns[0];
+
+      // Show success
+      document.getElementById('mainScreen').classList.add('hidden');
+      const suc = document.getElementById('successScreen');
+      suc.classList.remove('hidden');
+
+      document.getElementById('successAmt').textContent  = DB.formatPKR(amount);
+      document.getElementById('successSub').textContent  = desc;
+      document.getElementById('successTxnId').textContent = lastTxn ? lastTxn.id : '—';
+      document.getElementById('successDate').textContent  = lastTxn ? DB.formatDate(lastTxn.date) : '—';
+      document.getElementById('successBal').textContent   = DB.formatPKR(res.balance);
+
+    }, 900);
+  }
+
+  function goHome() {
+    sessionStorage.setItem('tbank_msg', 'Deposit of ' + DB.formatPKR(parseFloat(amtInput.value)) + ' successful!');
+    window.location.href = 'dashboard.html';
+  }
+
+  function anotherDeposit() {
+    document.getElementById('successScreen').classList.add('hidden');
+    document.getElementById('mainScreen').classList.remove('hidden');
+    amtInput.value = '';
+    document.getElementById('descInput').value = '';
+    document.querySelectorAll('.quick-amt').forEach(b => b.classList.remove('selected'));
+    // Refresh balance display
+    const fresh = DB.currentUser();
+    document.getElementById('currentBal').textContent = DB.formatPKR(fresh.balance);
+    updateSummary();
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TBank — Withdraw</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2300C896'/><text y='.9em' font-size='70' x='15'>🏦</text></svg>" />
+</head>
+<body>
+<div class="page-wrapper">
+
+  <!-- Main Screen -->
+  <div id="mainScreen">
+
+    <!-- Page Header -->
+    <div class="page-header" style="background: linear-gradient(135deg, #1A0A28, #2D1054);">
+      <a class="back-btn" href="dashboard.html">←</a>
+      <div class="page-header-info">
+        <h2>Withdraw Money</h2>
+        <p>Transfer funds out of your account</p>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="page-body">
+
+      <!-- Current Balance Info -->
+      <div class="info-card anim-fade-up">
+        <div class="info-row">
+          <span class="info-key">Available Balance</span>
+          <span class="info-val text-primary" id="currentBal">Rs 0.00</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Account Holder</span>
+          <span class="info-val" id="holderName">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Account Number</span>
+          <span class="info-val" id="accNum">—</span>
+        </div>
+      </div>
+
+      <!-- Amount Card -->
+      <div class="amount-card anim-fade-up delay-1">
+        <div class="amount-label">Enter Withdrawal Amount</div>
+        <div class="amount-input-wrap">
+          <span class="amount-currency" style="color:var(--danger);">Rs</span>
+          <input type="number" id="amountInput" class="amount-input"
+                 placeholder="0" min="1" />
+        </div>
+        <div class="quick-amounts">
+          <button class="quick-amt" onclick="setAmount(500)">500</button>
+          <button class="quick-amt" onclick="setAmount(1000)">1,000</button>
+          <button class="quick-amt" onclick="setAmount(5000)">5,000</button>
+          <button class="quick-amt" onclick="setAmount(10000)">10,000</button>
+          <button class="quick-amt" onclick="setAmount(25000)">25,000</button>
+          <button class="quick-amt" onclick="setWithdrawAll()">All</button>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="info-card anim-fade-up delay-2" style="padding:20px;">
+        <label class="form-label">Description (optional)</label>
+        <div class="input-wrap">
+          <span class="input-icon">📝</span>
+          <input type="text" id="descInput" class="form-input"
+                 placeholder="e.g. Rent, Shopping, Bills…" maxlength="60" />
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="info-card anim-fade-up delay-3">
+        <div class="info-row">
+          <span class="info-key">Withdrawal Amount</span>
+          <span class="info-val" id="summaryAmt">Rs 0.00</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Processing Fee</span>
+          <span class="info-val text-success">Free</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Balance After</span>
+          <span class="info-val" id="balAfter">Rs 0.00</span>
+        </div>
+      </div>
+
+      <!-- Balance indicator bar -->
+      <div style="margin-bottom:16px;" id="balBar" class="anim-fade-up delay-3">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:12px;color:var(--text-light);">Withdraw ratio</span>
+          <span style="font-size:12px;font-weight:600;color:var(--text-mid);" id="barPct">0%</span>
+        </div>
+        <div style="height:6px;background:var(--border);border-radius:50px;overflow:hidden;">
+          <div id="barFill" style="height:100%;width:0%;background:linear-gradient(90deg,var(--primary),var(--danger));border-radius:50px;transition:width 0.3s ease;"></div>
+        </div>
+      </div>
+
+      <div class="error-text" id="wdError" style="display:none;margin-bottom:12px;font-size:14px;"></div>
+
+      <button class="btn btn-danger anim-fade-up delay-4" onclick="handleWithdraw()">
+        <span id="wdBtnText">⬆️ &nbsp; Withdraw Now</span>
+        <div class="spinner" id="wdSpinner"></div>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ─── Success Screen ─── -->
+  <div id="successScreen" class="hidden">
+    <div class="success-screen">
+      <div class="success-circle" style="background:linear-gradient(135deg,#EF4444,#DC2626);box-shadow:0 16px 48px rgba(239,68,68,0.3);">✅</div>
+      <div class="success-amount" id="successAmt"></div>
+      <p class="success-msg">Withdrawal Successful!</p>
+      <p class="success-sub" id="successSub"></p>
+
+      <div class="info-card" style="margin:0 0 20px;text-align:left;">
+        <div class="info-row">
+          <span class="info-key">Transaction ID</span>
+          <span class="info-val" id="successTxnId" style="font-size:12px;"></span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Date &amp; Time</span>
+          <span class="info-val" id="successDate"></span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Remaining Balance</span>
+          <span class="info-val text-primary" id="successBal"></span>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="goHome()">Back to Home</button>
+      <button class="btn btn-outline mt-8" onclick="anotherWithdraw()">Make Another Withdrawal</button>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a class="nav-item" href="dashboard.html"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></a>
+    <a class="nav-item" href="deposit.html"><span class="nav-icon">⬇️</span><span class="nav-label">Deposit</span></a>
+    <a class="nav-item active" href="withdraw.html"><span class="nav-icon">⬆️</span><span class="nav-label">Withdraw</span></a>
+    <a class="nav-item" href="history.html"><span class="nav-icon">📋</span><span class="nav-label">History</span></a>
+    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></a>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="db.js"></script>
+<script>
+  DB.requireLogin();
+  let user = DB.currentUser();
+
+  document.getElementById('currentBal').textContent = DB.formatPKR(user.balance);
+  document.getElementById('holderName').textContent  = user.name;
+  document.getElementById('accNum').textContent      = 'TB-' + user.id.slice(-8).toUpperCase();
+
+  const amtInput = document.getElementById('amountInput');
+  amtInput.addEventListener('input', updateSummary);
+
+  function updateSummary() {
+    const fresh = DB.currentUser();
+    const amt   = parseFloat(amtInput.value) || 0;
+    const after = Math.max(0, fresh.balance - amt);
+    const pct   = fresh.balance > 0 ? Math.min(100, (amt / fresh.balance) * 100) : 0;
+
+    document.getElementById('summaryAmt').textContent = DB.formatPKR(amt);
+    document.getElementById('balAfter').textContent   = DB.formatPKR(after);
+    document.getElementById('barPct').textContent     = pct.toFixed(0) + '%';
+    document.getElementById('barFill').style.width    = pct + '%';
+
+    // Color balance-after based on remaining %
+    const balEl = document.getElementById('balAfter');
+    balEl.style.color = pct > 90 ? 'var(--danger)' : pct > 60 ? 'var(--warning)' : 'var(--text-dark)';
+  }
+
+  function setAmount(val) {
+    amtInput.value = val;
+    document.querySelectorAll('.quick-amt').forEach(b => b.classList.remove('selected'));
+    event.target.classList.add('selected');
+    updateSummary();
+  }
+
+  function setWithdrawAll() {
+    const fresh = DB.currentUser();
+    amtInput.value = fresh.balance;
+    document.querySelectorAll('.quick-amt').forEach(b => b.classList.remove('selected'));
+    event.target.classList.add('selected');
+    updateSummary();
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('wdError');
+    el.textContent = '⚠️ ' + msg; el.style.display = 'block';
+  }
+
+  function clearError() {
+    const el = document.getElementById('wdError');
+    el.textContent = ''; el.style.display = 'none';
+  }
+
+  function setLoading(loading) {
+    document.getElementById('wdBtnText').style.display  = loading ? 'none' : 'inline';
+    document.getElementById('wdSpinner').style.display  = loading ? 'block' : 'none';
+  }
+
+  function handleWithdraw() {
+    clearError();
+    const amount = parseFloat(amtInput.value);
+    const desc   = document.getElementById('descInput').value.trim() || 'Cash Withdrawal';
+
+    if (!amount || amount <= 0) { showError('Please enter a valid amount.'); return; }
+    if (amount < 100)           { showError('Minimum withdrawal is Rs 100.'); return; }
+
+    setLoading(true);
+    setTimeout(() => {
+      const res = DB.withdraw(amount, desc);
+      setLoading(false);
+
+      if (!res.ok) { showError(res.msg); return; }
+
+      const txns = DB.getTransactions(DB.currentUser().id);
+      const lastTxn = txns[0];
+
+      document.getElementById('mainScreen').classList.add('hidden');
+      const suc = document.getElementById('successScreen');
+      suc.classList.remove('hidden');
+
+      document.getElementById('successAmt').textContent   = DB.formatPKR(amount);
+      document.getElementById('successSub').textContent   = desc;
+      document.getElementById('successTxnId').textContent = lastTxn ? lastTxn.id : '—';
+      document.getElementById('successDate').textContent  = lastTxn ? DB.formatDate(lastTxn.date) : '—';
+      document.getElementById('successBal').textContent   = DB.formatPKR(res.balance);
+    }, 900);
+  }
+
+  function goHome() {
+    sessionStorage.setItem('tbank_msg', 'Withdrawal of ' + DB.formatPKR(parseFloat(amtInput.value)) + ' successful!');
+    window.location.href = 'dashboard.html';
+  }
+
+  function anotherWithdraw() {
+    document.getElementById('successScreen').classList.add('hidden');
+    document.getElementById('mainScreen').classList.remove('hidden');
+    amtInput.value = '';
+    document.getElementById('descInput').value = '';
+    document.querySelectorAll('.quick-amt').forEach(b => b.classList.remove('selected'));
+    const fresh = DB.currentUser();
+    document.getElementById('currentBal').textContent = DB.formatPKR(fresh.balance);
+    updateSummary();
+  }
+</script>
+</body>
+</html>

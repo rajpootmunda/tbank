@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TBank — Pakistan's Smart Bank</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2300C896'/><text y='.9em' font-size='70' x='15'>🏦</text></svg>" />
+</head>
+<body>
+<div class="page-wrapper auth-page">
+
+  <!-- Hero Section -->
+  <div class="auth-hero">
+    <div class="brand-logo">
+      <div class="logo-icon">🏦</div>
+      <div class="logo-text">T<span>Bank</span></div>
+    </div>
+    <h1 class="auth-tagline">Banking Made<br>Simple & Fast</h1>
+    <p class="auth-subtitle">Manage your money with ease.<br>Deposit, withdraw, and track history in real time.</p>
+  </div>
+
+  <!-- Auth Body -->
+  <div class="auth-body">
+
+    <!-- Tabs -->
+    <div class="auth-tabs">
+      <button class="tab-btn active" id="loginTab" onclick="showTab('login')">Sign In</button>
+      <button class="tab-btn" id="registerTab" onclick="showTab('register')">Create Account</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="loginForm">
+      <div class="form-group">
+        <label class="form-label">Mobile Number</label>
+        <div class="input-wrap">
+          <span class="input-icon">📱</span>
+          <input type="tel" id="loginPhone" class="form-input" placeholder="03XX-XXXXXXX" maxlength="11" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">PIN</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="loginPin" class="form-input" placeholder="Enter your PIN" maxlength="6" />
+        </div>
+        <div class="error-text" id="loginError"></div>
+      </div>
+
+      <div style="margin-top:8px;"></div>
+      <button class="btn btn-primary" onclick="handleLogin()">
+        <span id="loginBtnText">Sign In</span>
+        <div class="spinner" id="loginSpinner"></div>
+      </button>
+
+      <p style="text-align:center;margin-top:20px;font-size:13px;color:var(--text-light);">
+        Don't have an account?
+        <a href="#" onclick="showTab('register')" style="color:var(--primary);font-weight:600;">Register</a>
+      </p>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="registerForm" class="hidden">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <div class="input-wrap">
+          <span class="input-icon">👤</span>
+          <input type="text" id="regName" class="form-input" placeholder="Your full name" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mobile Number</label>
+        <div class="input-wrap">
+          <span class="input-icon">📱</span>
+          <input type="tel" id="regPhone" class="form-input" placeholder="03XX-XXXXXXX" maxlength="11" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Create PIN (4–6 digits)</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="regPin" class="form-input" placeholder="Choose a secure PIN" maxlength="6" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm PIN</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="regPin2" class="form-input" placeholder="Repeat your PIN" maxlength="6" />
+        </div>
+        <div class="error-text" id="registerError"></div>
+      </div>
+
+      <button class="btn btn-primary" onclick="handleRegister()">
+        <span id="regBtnText">Create Account</span>
+        <div class="spinner" id="regSpinner"></div>
+      </button>
+
+      <p style="text-align:center;margin-top:20px;font-size:13px;color:var(--text-light);">
+        Already have an account?
+        <a href="#" onclick="showTab('login')" style="color:var(--primary);font-weight:600;">Sign In</a>
+      </p>
+    </div>
+
+  </div><!-- /auth-body -->
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+</div><!-- /page-wrapper -->
+
+<script src="db.js"></script>
+<script>
+  // Redirect if already logged in
+  if (DB.currentUser()) window.location.href = 'dashboard.html';
+
+  function showTab(tab) {
+    document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login');
+    document.getElementById('registerForm').classList.toggle('hidden', tab !== 'register');
+    document.getElementById('loginTab').classList.toggle('active', tab === 'login');
+    document.getElementById('registerTab').classList.toggle('active', tab === 'register');
+    clearErrors();
+  }
+
+  function clearErrors() {
+    ['loginError','registerError'].forEach(id => {
+      const el = document.getElementById(id);
+      el.style.display = 'none'; el.textContent = '';
+    });
+  }
+
+  function showError(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg; el.style.display = 'block';
+  }
+
+  function showToast(msg, type = 'info') {
+    const t = document.getElementById('toast');
+    const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+    t.innerHTML = icons[type] + ' ' + msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function setLoading(btnTextId, spinnerId, loading) {
+    document.getElementById(btnTextId).style.display = loading ? 'none' : 'inline';
+    document.getElementById(spinnerId).style.display  = loading ? 'block' : 'none';
+  }
+
+  function handleLogin() {
+    clearErrors();
+    const phone = document.getElementById('loginPhone').value.trim();
+    const pin   = document.getElementById('loginPin').value.trim();
+
+    if (!phone || !pin) { showError('loginError', 'Please fill in all fields.'); return; }
+
+    setLoading('loginBtnText', 'loginSpinner', true);
+    setTimeout(() => {
+      const res = DB.loginUser(phone, pin);
+      setLoading('loginBtnText', 'loginSpinner', false);
+      if (res.ok) {
+        showToast('Welcome back, ' + res.user.name + '!', 'success');
+        setTimeout(() => window.location.href = 'dashboard.html', 800);
+      } else {
+        showError('loginError', res.msg);
+      }
+    }, 600);
+  }
+
+  function handleRegister() {
+    clearErrors();
+    const name  = document.getElementById('regName').value.trim();
+    const phone = document.getElementById('regPhone').value.trim();
+    const pin   = document.getElementById('regPin').value.trim();
+    const pin2  = document.getElementById('regPin2').value.trim();
+
+    if (!name || !phone || !pin || !pin2) { showError('registerError', 'All fields are required.'); return; }
+    if (phone.length < 10) { showError('registerError', 'Enter a valid mobile number.'); return; }
+    if (pin.length < 4)    { showError('registerError', 'PIN must be at least 4 digits.'); return; }
+    if (pin !== pin2)      { showError('registerError', 'PINs do not match.'); return; }
+
+    setLoading('regBtnText', 'regSpinner', true);
+    setTimeout(() => {
+      const res = DB.createUser(name, phone, pin);
+      setLoading('regBtnText', 'regSpinner', false);
+      if (res.ok) {
+        // Auto login
+        DB.loginUser(phone, pin);
+        showToast('Account created! Welcome, ' + name + '!', 'success');
+        setTimeout(() => window.location.href = 'dashboard.html', 900);
+      } else {
+        showError('registerError', res.msg);
+      }
+    }, 700);
+  }
+
+  // Enter key support
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      if (!document.getElementById('loginForm').classList.contains('hidden'))    handleLogin();
+      else if (!document.getElementById('registerForm').classList.contains('hidden')) handleRegister();
+    }
+  });
+</script>
+</body>
+</html>
